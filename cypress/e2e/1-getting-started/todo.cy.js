@@ -32,6 +32,9 @@ describe('example to-do app', () => {
     // and then perform an assertion with `should`.
     cy.get('.todo-list li').first().should('have.text', 'Pay electric bill')
     cy.get('.todo-list li').last().should('have.text', 'Walk the dog')
+    /* ==== Generated with Cypress Studio ==== */
+    cy.visit('https://example.cypress.io/todo');
+    /* ==== End Cypress Studio ==== */
   })
 
   it('can add new todo items', () => {

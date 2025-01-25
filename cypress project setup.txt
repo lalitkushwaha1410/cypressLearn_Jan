@@ -1,0 +1,43 @@
+1, create a new folder in the directory , eg cypress-automation
+2. now open vs code , open the folder.
+3. open terminal , select bash.
+4. put command - npm init
+5. give input for the info asked.
+package.json file will get created in our project folder.
+6. put command   - npm install cypress --save-dev 
+with version - npm install --save-dev cypress@10.3.1
+when we install cypress, node_modules folder gets created in our project folder.
+7. command - npx cypress open/ yarn cypress open  | to open test runner
+./node_modules/.bin/cypress open
+--cypress folder will get created in the project folder which contain folder like fixtures , supoort , e2e etc.
+8. run cypress test cases - ./node_modules/.bin/cypress run --record --key 8c1c09fe-6667-4ccd-a512-2299981a78f4
+command -npx cypress run / yarn cypress run- to run all spec files
+command - npx cypress info : to get info of cypress installed in your system
+
+9.cypress.json / cypress.config.js - it enables us to change the default settings of cypress.
+10. index.js/e2e.js - it is the first file that cypress investigates when we run cypress. this file is used to add additonal imports,additonal libraries , event listeners etc.
+11.command.js - it includes comman functions/custom commands that are used in many test cases. So basically comman piece of code we write here.
+this hepls to reduce code duplication.
+12. fixtures - it is mainly used to store the test data in json format(most cases).
+13. in spec files before describe block , add ///reference type="Cypress" />  to get all cypress commands .
+14. it block is compulsory to write ,otherwise error will come in the test runner when running the test case. Writing only describe block will also give error.
+15. add blank tsconfig.json file in the cypress folder if you are using .ts spec file.
+16. command to run cypress tests in diff environemnt : npx cypress run --env ENV=staging --headed
+17. to run test on different browser : npx cypress run --browser chrome
+18. headed mode - npx cypress run --headed true
+19. no exit from browser after test run - npx cypress run --no-exit
+20. to run particular spec file : npx cypress run --browser chrome --spec cypress/e2e/1-getting-started/todo.cy.js --no-exit --headed
+21. to find cache path - npx cypress cache path
+22. know cypress version - npx cypress version , to know cypress info in machine - npx cypress info  , also - npx cypress
+23. 
+
+
+
+
+
+
+docker run -it -v "%cd%":/e2e -w /e2e cypress/included:8.2.0 --spec cypress/e2e/*.js
+
+ id - #
+ class = .
+ input[type=’submit’]
