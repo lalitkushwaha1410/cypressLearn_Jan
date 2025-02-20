@@ -1,0 +1,218 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  DOCKER_HOST: tcp://127.0.0.1:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  npm_config_cache: '$CI_PROJECT_DIR/.npm'
+  CYPRESS_CACHE_FOLDER: '$CI_PROJECT_DIR/cache/Cypress'
+  BROWSER: 'chrome'
+  CAP: 
+    value: "image-e2e"
+    options:
+      - "all"
+      - "comp"
+      - "e2e"
+      - "image"
+      - "image-comp"
+      - "image-e2e"
+      - "imagepicker"
+      - "podcast"
+      - "podcast-comp"
+      - "podcast-e2e"
+      - "video"
+      - "video-comp"
+      - "video-e2e"
+    description: "what are we testing"
+  ENV: 
+    value: "staging"
+    options:
+      - "systest"
+      - "staging"
+      - "performance"
+      - "integration"
+    description: "select the environment for running automation tests"
+  NOTIFY: 
+    value: "false"
+    options:
+      - "true"
+      - "false"
+    description: "Select if you want to notify on teams channel"
+
+.docker_curl_runner_image: &docker_curl_runner_image
+  image:
+    name: ${DOCKER_REGISTRY_CHA}/alpine/curl-jq:3.14
+  tags:
+    - k8s-cha-v2
+
+stages:
+  - test
+  - notify
+  - validate
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cache/*
+    - cache/Cypress
+    - node_modules
+
+Run automation test suite:      
+  image: cypress/browsers:node16.17.1-chrome106-ff105-edge
+  stage: test
+  tags:
+    - k8s-cha-v2
+  script:
+    - yarn install
+    - echo "Running Automation Tests for Capability:$CAP, Environment :$ENV ,Browser :$BROWSER "
+    - yarn $CAP --browser $BROWSER --env ENV=$ENV
+    - echo "Run automation test suite completed" > ./automation_test_completed 
+  environment:
+    name: $ENV
+  after_script:
+    - echo "JOB_STATUS=${CI_JOB_STATUS:-success}" >> test_results.env
+    - echo "The status of the pipeline is:" $CI_PIPELINE_STATUS
+    - echo "JOB_ID=$CI_JOB_ID" >> test_results.env
+    - if [[ $CI_JOB_STATUS == "success" ]]; then
+        echo "The Automation Test cases got passed!";
+        echo "JOB_STATUS=${CI_JOB_STATUS:-success}" >> test_results.env
+        echo "JOB_ID=$CI_JOB_ID" >> test_results.env
+      else
+        echo "The Automation Test cases got failed!";
+        echo "JOB_STATUS=${CI_JOB_STATUS:-failed}" >> test_results.env
+        echo "JOB_ID=$CI_JOB_ID" >> test_results.env
+      fi
+  artifacts:
+    when: always
+    paths:
+      - cypress/reports/
+      - cypress/screenshots
+      - ./automation_test_completed
+    expire_in: 15 day
+    reports:
+      dotenv: test_results.env
+  allow_failure: true
+
+Notify on teams channel:
+  <<: *docker_curl_runner_image
+  needs: [Run automation test suite]
+  stage: notify
+  tags:
+    - k8s-cha-v2
+  script:
+    - |
+      if [[ "$JOB_STATUS" == "success" ]]; then
+        themeColor="52eb34"  # Green color for success
+      else
+        themeColor="eb3434"  # Red color for failure
+      fi
+      if [[ "$CAP" == "image-e2e" ]] || [[ "$CAP" == "image-comp" ]]; then
+        echo "Processing image content"
+        summary="Image Capability"
+        activityTitle="Image Capability - Automation Results"
+        capability="podcast"
+        cap_name="image"
+      elif [[ "$CAP" == "podcast-e2e" ]] || [[ "$CAP" == "podcast-comp" ]]; then
+        echo "Processing podcast content"
+        summary="Podcast Capability"
+        activityTitle="Podcast Capability - Automation Results"
+        capability="podcast"
+        cap_name="podcast"
+      elif [[ "$CAP" == "video-e2e" ]] || [[ "$CAP" == "video-comp" ]]; then
+        echo "Processing video content"
+        summary="Video Capability"
+        activityTitle="Video Capability - Automation Results"
+        capability="podcast"
+        cap_name="video"
+      else
+        summary="Content Convergence"
+        activityTitle="Content Convergence - Automation Results"
+        capability="podcast"
+        cap_name="adhoc-table"
+      fi
+      curl -X POST -H "Content-Type: application/json" -d '{
+        "@type": "MessageCard",
+        "@context": "http://schema.org/extensions",
+        "themeColor": "'"$themeColor"'",
+        "summary": "'"$summary"'",
+        "sections": [{
+          "activityTitle": "'"$activityTitle"'",
+          "activitySubtitle": "Content Convergence",
+          "activityImage": "https://www.icis.com/explore/wp-content/themes/icis-2020/assets/images/footer-logo.png",
+          "facts": [{
+            "name": "Project",
+            "value": "'"$CI_PROJECT_NAME"'"
+          }, {
+            "name": "Branch",
+            "value": "'"$CI_COMMIT_BRANCH"'"
+          }, {
+            "name": "Environment",
+            "value": "'"$ENV"'"
+          },{
+            "name": "Browser",
+            "value": "'"$BROWSER"'"
+          },{
+            "name": "Status",
+            "value": "'"$JOB_STATUS"'"
+          },{
+            "name": "Author",
+            "value": "'"$GITLAB_USER_NAME"'"
+          }],
+          "markdown": true
+        }],
+        "potentialAction": [{
+          "@type": "OpenUri",
+          "name": "Play Component Test Video Recording",
+          "targets": [{
+            "os": "default",
+            "uri": "https://gitlab.cha.rbxd.ds/icis/capabilities/'"$capability"'/automation-test-suite/-/jobs/'"$JOB_ID"'/artifacts/file/cypress/reports/videos/'"$cap_name"'_comp_test.cy.ts.mp4"
+          }]
+        },{
+          "@type": "OpenUri",
+          "name": "Browse Component Test Screenshots",
+          "targets": [{
+            "os": "default",
+            "uri": "https://gitlab.cha.rbxd.ds/icis/capabilities/'"$capability"'/automation-test-suite/-/jobs/'"$JOB_ID"'/artifacts/browse/cypress/screenshots/'"$cap_name"'_comp_test.cy.ts/"
+          }]
+        },{
+          "@type": "OpenUri",
+          "name": "Play E2E Test Video Recording",
+          "targets": [{
+            "os": "default",
+            "uri": "https://gitlab.cha.rbxd.ds/icis/capabilities/'"$capability"'/automation-test-suite/-/jobs/'"$JOB_ID"'/artifacts/file/cypress/reports/videos/'"$cap_name"'_e2e_test.cy.ts.mp4"
+          }]
+        },{
+          "@type": "OpenUri",
+          "name": "Browse E2E Test Screenshots",
+          "targets": [{
+            "os": "default",
+            "uri": "https://gitlab.cha.rbxd.ds/icis/capabilities/'"$capability"'/automation-test-suite/-/jobs/'"$JOB_ID"'/artifacts/browse/cypress/screenshots/'"$cap_name"'_e2e_test.cy.ts/"
+          }]
+        },{
+          "@type": "OpenUri",
+          "name": "Download Full Test Reports",
+          "targets": [{
+            "os": "default",
+            "uri": "https://gitlab.cha.rbxd.ds/icis/capabilities/'"$capability"'/automation-test-suite/-/jobs/'"$JOB_ID"'/artifacts/raw/cypress/reports/automation-test-report.html"
+          }]
+        }]
+      }' $TEAMS_WEBHOOK_URL
+  dependencies:
+    - Run automation test suite
+  rules:
+    - if: '$NOTIFY == "true"'
+
+
+Verify jobs: 
+  stage: validate
+  tags:
+    - k8s-cha-v2
+  script: 
+    - |
+      if [[ -f ./automation_test_completed ]]; then
+      echo "All jobs were successfully completed."
+      else
+      echo "One or more jobs were not completed."
+      exit 1
+      fi
+  dependencies:
+    - Run automation test suite

@@ -1,2 +1,6 @@
+/cypress/screenshots/
+/cypress/videos/
 /node_modules/
-/downloads/
+/cypress/reports/
+/yarn-error.log
+/yarn.lock

@@ -1,6 +1,31 @@
 {
+  "name": "cc-cypress-automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "",
+    "image": "yarn cypress run --spec=cypress/e2e/image/*.ts ",
+    "image-comp": "yarn cypress run --spec=cypress/e2e/image/*comp*.cy.ts ",
+    "image-e2e": "yarn cypress run --spec=cypress/e2e/image/*e2e*.cy.ts ",
+    "imagepicker": "yarn cypress run --spec=cypress/e2e/imagePicker/imagepicker_comp_test.cy.ts ",
+    "podcast": "yarn cypress run --spec=cypress/e2e/podcast/*.ts ",
+    "podcast-comp": "yarn cypress run --spec=cypress/e2e/podcast/*comp*.cy.ts ",
+    "podcast-e2e": "yarn cypress run --spec=cypress/e2e/podcast/*e2e*.cy.ts ",
+    "video": "yarn cypress run --spec=cypress/e2e/video/*.ts ",
+    "video-comp": "yarn cypress run --spec=cypress/e2e/video/*comp*.cy.ts ",
+    "video-e2e": "yarn cypress run --spec=cypress/e2e/video/*e2e*.cy.ts ",
+    "all": "yarn cypress run --spec=cypress/e2e/*/*.ts ",
+    "comp": "yarn cypress run --spec=cypress/e2e/*/*comp*.cy.ts ",
+    "e2e": "yarn cypress run --spec=cypress/e2e/*/*e2e*.cy.ts "
+  },
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
-    "cypress": "^14.0.0",
-    "typescript": "^5.7.3"
+    "cypress": "13.13.1",
+    "cypress-iframe": "^1.0.1",
+    "cypress-mochawesome-reporter": "^3.5.0",
+    "typescript": "^5.0.2"
   }
 }
